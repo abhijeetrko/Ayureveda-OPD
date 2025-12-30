@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import date
 import gspread
 from google.oauth2.service_account import Credentials
+from openai import OpenAI
 
 # ------------------ PAGE CONFIG ------------------
 st.set_page_config(page_title="", layout="wide")
@@ -90,6 +91,7 @@ else:
     sheet = get_sheet()
     records = sheet.get_all_records()
     df = pd.DataFrame(records)
+    opd_json = df.to_dict(orient="records")
 
     if df.empty:
         st.info("No OPD data available. Add entries using 'Add OPD Entry'.")
@@ -129,7 +131,62 @@ else:
 
 # ------------------ FOOTER ------------------
 st.markdown("---")
-st.caption(
-    "Data is temporary and resets on app refresh. "
-    "Future versions will support permanent storage and AI summaries."
+
+
+# ------------------ OPENAI CLIENT ------------------
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+
+def build_opd_prompt(opd_json):
+    return f"""
+You are assisting an Ayurvedic doctor.
+
+STRICT RULES:
+- Do NOT diagnose
+- Do NOT suggest medicines
+- Do NOT change treatment
+- Only summarize and observe patterns
+- Use simple, non-alarming language
+
+OPD DATA:
+{opd_json}
+
+TASK:
+1. Give a short OPD summary
+2. List most common complaints
+3. List common diagnoses
+4. Mention prakriti trends
+5. Mention follow-up workload
+"""
+
+st.markdown("---")
+st.subheader("🧠 AI Prompt Playground (Basic)")
+
+user_prompt = st.text_area(
+    "Enter your prompt",
+    placeholder="e.g. Summarize today's OPD in simple language",
+    height=120
 )
+
+prompt = build_opd_prompt(opd_json)
+
+if st.button("Generate Response"):
+    if user_prompt.strip() == "":
+        st.warning("Please enter a prompt")
+    else:
+        with st.spinner("Thinking..."):
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "user", "content": prompt},
+                    {"role":"system","content":"You are assiting ayurvedic doctor for his OPD summary and analysis"}
+                ],
+                temperature=0.3
+            )
+
+            ai_output = response.choices[0].message.content
+            st.text_area(
+                "AI Response",
+                ai_output,
+                height=200
+            )
