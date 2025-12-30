@@ -137,7 +137,7 @@ st.markdown("---")
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 
-def build_opd_prompt(opd_json):
+def build_opd_prompt(opd_json, user_prompt):
     return f"""
 You are assisting an Ayurvedic doctor.
 
@@ -152,7 +152,7 @@ OPD DATA:
 {opd_json}
 
 TASK:
-1. Give a short OPD summary
+1. Give a short OPD summary + {user_prompt}
 2. List most common complaints
 3. List common diagnoses
 4. Mention prakriti trends
@@ -170,7 +170,7 @@ user_prompt = st.text_area(
     height=120
 )
 
-prompt = build_opd_prompt(opd_json)
+prompt = build_opd_prompt(opd_json, user_prompt)
 
 if st.button("Generate Response"):
     if user_prompt.strip() == "":
