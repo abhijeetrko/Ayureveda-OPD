@@ -157,6 +157,8 @@ TASK:
 3. List common diagnoses
 4. Mention prakriti trends
 5. Mention follow-up workload
+6. How Next week will be?
+7. How I can be Prepared?
 """
 
 st.markdown("---")
